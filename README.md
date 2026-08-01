@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 美容室LINEbot
 
-## Getting Started
+美容室オーナー向けの受託案件。LINE公式アカウントに届くFAQ（営業時間・メニュー料金・施術時間・駐車場など）にAIが自動応答し、答えられない質問・予約変更/キャンセルの相談はオーナーへ自動通知するLINE botです。
 
-First, run the development server:
+## 構成
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js**（App Router / TypeScript）：Webhook受信、FAQ応答ロジック、管理画面
+- **LINE Messaging API**（`@line/bot-sdk`）：Webhook受信・返信・エスカレーション通知・友だち一斉配信
+- **Claude API**（Haiku 4.5、`@anthropic-ai/sdk`）：FAQ照合・回答生成、確信度が低い場合のエスカレーション判定
+- **Supabase**（`salon`スキーマ）：FAQ・お知らせデータの保存先
+- **Vercel**：ホスティング
+
+## ディレクトリ構成
+
+```
+app/
+  api/line/webhook/   LINE Webhook受信エンドポイント
+  admin/              管理画面（FAQ・お知らせのCRUD、簡易パスワード認証）
+lib/
+  faq.ts              FAQ応答ロジック（Supabase + Claude）
+  line.ts             LINE Messaging APIクライアント
+  supabase.ts         Supabaseクライアント（salonスキーマ）
+  anthropic.ts        Claude APIクライアント
+  session.ts          管理画面の簡易セッション検証
+proxy.ts              /admin配下の認証保護（旧middleware）
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## セットアップ
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`.env.local`に以下の環境変数が必要です（値は本番はVercelの環境変数を参照）。
 
-## Learn More
+| 変数 | 用途 |
+|---|---|
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Supabase接続（`salon`スキーマ） |
+| `LINE_CHANNEL_SECRET` / `LINE_CHANNEL_ACCESS_TOKEN` | LINE Messaging API |
+| `LINE_OWNER_USER_ID` | エスカレーション通知の送信先（オーナーのLINEユーザーID） |
+| `ANTHROPIC_API_KEY` | Claude API |
+| `ADMIN_PASSWORD` | 管理画面ログインパスワード |
+| `SESSION_SECRET` | 管理画面セッションCookieの署名鍵 |
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev    # 開発サーバー
+npm run lint   # ESLint
+npm run build  # 本番ビルド
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## デプロイ
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`main`ブランチへのpushでVercelに自動デプロイされます（GitHub連携済み）。LINE Developersコンソール側のWebhook URLは本番URL（`/api/line/webhook`）を指定してください。
 
-## Deploy on Vercel
+## ドキュメント
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+要件・設計・運用マニュアルはプロジェクトルート（`webapp/`の一つ上の階層）の`01_questions.md`〜`07_manual.md`を参照してください。
