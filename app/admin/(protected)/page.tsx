@@ -17,13 +17,25 @@ type Notice = {
 };
 
 export default async function AdminPage() {
-  const [{ data: faqs }, { data: notices }] = await Promise.all([
+  const [faqsResult, noticesResult] = await Promise.all([
     supabase.from("faqs").select("id, category, question_examples, answer").order("category"),
     supabase.from("notices").select("id, message, is_active").order("created_at", { ascending: false }),
   ]);
 
+  if (faqsResult.error) console.error("Failed to fetch faqs from Supabase", faqsResult.error);
+  if (noticesResult.error) console.error("Failed to fetch notices from Supabase", noticesResult.error);
+
+  const faqs = faqsResult.data;
+  const notices = noticesResult.data;
+
   return (
     <>
+      {(faqsResult.error || noticesResult.error) && (
+        <p className="admin-error">
+          データの取得に失敗しました。時間をおいて再度お試しください。（表示されている一覧が空でも、データが消えたわけではありません）
+        </p>
+      )}
+
       <section className="admin-section">
         <h2>FAQ</h2>
 

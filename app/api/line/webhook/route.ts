@@ -14,36 +14,50 @@ export async function POST(request: Request) {
 
   const { events } = JSON.parse(body) as webhook.CallbackRequest;
 
-  await Promise.all(events.map(handleEvent));
+  // LINE resends the whole batch on a non-2xx/timeout response, so one event's
+  // failure must never fail the others or bubble up into a 500 here.
+  await Promise.allSettled(events.map(handleEvent));
 
   return new Response("OK", { status: 200 });
 }
 
 async function handleEvent(event: webhook.Event) {
-  if (event.type !== "message" || event.message.type !== "text") {
-    return;
-  }
-  if (!event.replyToken) {
-    return;
-  }
+  try {
+    if (event.type !== "message" || event.message.type !== "text") {
+      return;
+    }
+    if (!event.replyToken) {
+      return;
+    }
 
-  const { answer, escalate } = await answerFaq(event.message.text);
+    const { answer, escalate } = await answerFaq(event.message.text);
 
-  await lineClient.replyMessage({
-    replyToken: event.replyToken,
-    messages: [{ type: "text", text: answer }],
-  });
+    try {
+      await lineClient.replyMessage({
+        replyToken: event.replyToken,
+        messages: [{ type: "text", text: answer }],
+      });
+    } catch (error) {
+      console.error("Failed to reply to LINE message", error);
+    }
 
-  if (escalate) {
-    const userId = event.source?.type === "user" ? event.source.userId : undefined;
-    await lineClient.pushMessage({
-      to: process.env.LINE_OWNER_USER_ID!,
-      messages: [
-        {
-          type: "text",
-          text: `【要確認】botが回答できなかった質問です。\n\nお客様（${userId ?? "不明"}）:\n${event.message.text}`,
-        },
-      ],
-    });
+    if (escalate) {
+      const userId = event.source?.type === "user" ? event.source.userId : undefined;
+      try {
+        await lineClient.pushMessage({
+          to: process.env.LINE_OWNER_USER_ID!,
+          messages: [
+            {
+              type: "text",
+              text: `【要確認】botが回答できなかった質問です。\n\nお客様（${userId ?? "不明"}）:\n${event.message.text}`,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error("Failed to push escalation notification", error);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to handle LINE event", error);
   }
 }

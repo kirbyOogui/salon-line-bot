@@ -1,9 +1,12 @@
-import { createHash, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 export const ADMIN_SESSION_COOKIE = "admin_session";
 
+// Derived from SESSION_SECRET (not ADMIN_PASSWORD) so a compromised session
+// cookie can be invalidated by rotating SESSION_SECRET alone, without also
+// having to change the login password.
 export function createSessionToken(): string {
-  return createHash("sha256").update(process.env.ADMIN_PASSWORD!).digest("hex");
+  return createHmac("sha256", process.env.SESSION_SECRET!).update("admin").digest("hex");
 }
 
 export function isValidSessionToken(token: string | undefined): boolean {

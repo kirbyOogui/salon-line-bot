@@ -45,25 +45,39 @@ ${noticeList || "（現在、有効なお知らせはありません）"}`;
 }
 
 export async function answerFaq(question: string): Promise<FaqAnswer> {
-  const [{ data: faqs }, { data: notices }] = await Promise.all([
+  const [faqsResult, noticesResult] = await Promise.all([
     supabase.from("faqs").select("category, question_examples, answer"),
     supabase.from("notices").select("message").eq("is_active", true),
   ]);
 
-  const faqList = (faqs ?? [])
+  if (faqsResult.error) {
+    console.error("Failed to fetch faqs from Supabase", faqsResult.error);
+    return FALLBACK_ANSWER;
+  }
+  if (noticesResult.error) {
+    console.error("Failed to fetch notices from Supabase", noticesResult.error);
+    return FALLBACK_ANSWER;
+  }
+
+  const faqList = faqsResult.data
     .map((f) => `- カテゴリ: ${f.category}\n  想定質問: ${f.question_examples}\n  回答: ${f.answer}`)
     .join("\n");
-  const noticeList = (notices ?? []).map((n) => `- ${n.message}`).join("\n");
+  const noticeList = noticesResult.data.map((n) => `- ${n.message}`).join("\n");
 
-  const message = await anthropic.messages.parse({
-    model: "claude-haiku-4-5",
-    max_tokens: 1024,
-    system: buildSystemPrompt(faqList, noticeList),
-    messages: [{ role: "user", content: question }],
-    output_config: {
-      format: zodOutputFormat(FaqAnswerSchema),
-    },
-  });
+  try {
+    const message = await anthropic.messages.parse({
+      model: "claude-haiku-4-5",
+      max_tokens: 1024,
+      system: buildSystemPrompt(faqList, noticeList),
+      messages: [{ role: "user", content: question }],
+      output_config: {
+        format: zodOutputFormat(FaqAnswerSchema),
+      },
+    });
 
-  return message.parsed_output ?? FALLBACK_ANSWER;
+    return message.parsed_output ?? FALLBACK_ANSWER;
+  } catch (error) {
+    console.error("Failed to get FAQ answer from Claude", error);
+    return FALLBACK_ANSWER;
+  }
 }
