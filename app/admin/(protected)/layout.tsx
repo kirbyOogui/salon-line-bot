@@ -1,3 +1,4 @@
+import Link from "next/link";
 import "../admin.css";
 import { logout } from "./actions";
 
@@ -10,6 +11,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button type="submit">ログアウト</button>
         </form>
       </header>
+      <nav className="admin-nav">
+        <Link href="/admin">FAQ</Link>
+        <Link href="/admin/notices">お知らせ</Link>
+      </nav>
       {children}
     </div>
   );

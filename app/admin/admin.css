@@ -39,6 +39,26 @@
   font-size: 1.1rem;
 }
 
+.admin-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #ddd;
+}
+
+.admin-nav a {
+  display: block;
+  padding: 8px 4px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #171717;
+  border-bottom: 2px solid transparent;
+}
+
+.admin-nav a:hover {
+  border-bottom-color: #999;
+}
+
 .admin-section {
   margin-bottom: 32px;
 }
