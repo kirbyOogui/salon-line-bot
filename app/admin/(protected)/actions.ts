@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ADMIN_SESSION_COOKIE, isValidSessionToken } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
+import { lineClient } from "@/lib/line";
 
 async function requireAdminSession() {
   const cookieStore = await cookies();
@@ -73,9 +74,16 @@ export async function addNotice(formData: FormData) {
 
   const message = requiredText(formData, "message");
   const is_active = formData.get("is_active") === "on";
+  const shouldBroadcast = formData.get("broadcast") === "on";
 
   const { error } = await supabase.from("notices").insert({ message, is_active });
   if (error) throw new Error(error.message);
+
+  if (shouldBroadcast) {
+    await lineClient.broadcast({
+      messages: [{ type: "text", text: message }],
+    });
+  }
 
   revalidatePath("/admin");
 }

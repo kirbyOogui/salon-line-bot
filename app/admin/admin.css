@@ -114,3 +114,8 @@ button {
   gap: 6px;
   font-size: 0.9rem;
 }
+
+.admin-checkbox-warn {
+  color: #c0392b;
+  font-weight: bold;
+}

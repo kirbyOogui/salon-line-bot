@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { addFaq, updateFaq, deleteFaq, addNotice, updateNotice, deleteNotice } from "./actions";
+import { ConfirmSubmitButton, NoticeAddSubmitButton } from "./confirm-submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,7 @@ export default async function AdminPage() {
               <label htmlFor="new-answer">回答</label>
               <textarea id="new-answer" name="answer" placeholder="お客様への回答文" required />
             </div>
-            <button type="submit">FAQを追加</button>
+            <ConfirmSubmitButton confirmMessage="このFAQを追加しますか？">FAQを追加</ConfirmSubmitButton>
           </form>
         </div>
 
@@ -84,9 +85,9 @@ export default async function AdminPage() {
             </form>
             <form action={deleteFaq}>
               <input type="hidden" name="id" value={faq.id} />
-              <button type="submit" className="admin-danger">
+              <ConfirmSubmitButton confirmMessage="このFAQを削除します。よろしいですか？" className="admin-danger">
                 削除
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </div>
         ))}
@@ -105,7 +106,11 @@ export default async function AdminPage() {
               <input type="checkbox" name="is_active" />
               有効にする（botの回答に反映する）
             </label>
-            <button type="submit">お知らせを追加</button>
+            <label className="admin-checkbox-row admin-checkbox-warn">
+              <input type="checkbox" name="broadcast" />
+              LINEの友だち全員に今すぐ配信する（取り消せません）
+            </label>
+            <NoticeAddSubmitButton>お知らせを追加</NoticeAddSubmitButton>
           </form>
         </div>
 
@@ -127,9 +132,9 @@ export default async function AdminPage() {
             </form>
             <form action={deleteNotice}>
               <input type="hidden" name="id" value={notice.id} />
-              <button type="submit" className="admin-danger">
+              <ConfirmSubmitButton confirmMessage="このお知らせを削除します。よろしいですか？" className="admin-danger">
                 削除
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </div>
         ))}
