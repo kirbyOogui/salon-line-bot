@@ -41,7 +41,10 @@ async function handleEvent(event: webhook.Event) {
       console.error("Failed to reply to LINE message", error);
     }
 
-    if (escalate) {
+    // ポートフォリオ公開用のデモ環境では、エスカレーション通知（開発者個人のLINEへのPush）を
+    // 無効化する。お客様への返信（answer）はデモでも通常通り送られる——変わるのは
+    // オーナー通知が飛ばない点のみ。
+    if (escalate && process.env.DEMO_MODE !== "true") {
       const userId = event.source?.type === "user" ? event.source.userId : undefined;
       try {
         await lineClient.pushMessage({
